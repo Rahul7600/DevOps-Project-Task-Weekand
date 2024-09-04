@@ -1,52 +1,52 @@
 services:
-  db:
-    image: mysql:8.0.39
+  nginx:
+    image: nginx
+    ports:
+      - '80:80'
     volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./logs/nginx:/var/log/nginx
+      - wordpress_data:/var/www/html
+    depends_on:
+      - wordpress
+    restart: always
+
+  wordpress:
+    image: wordpress:6.3.1-php8.0-fpm
+    ports:
+      - '9000:9000'
+    volumes:
+      - wordpress_data:/var/www/html
+    environment:
+      - WORDPRESS_DB_NAME=wpdb
+      - WORDPRESS_TABLE_PREFIX=wp_
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_PASSWORD=aqwe123
+    depends_on:
+      - mysql
+    restart: always
+
+  mysql:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=aqwe123
+      - MYSQL_DATABASE=wpdb
+    volumes:
+      - mysql_data:/var/lib/mysql
       - db_data:/var/lib/mysql
       - ./database_dump.sql:/docker-entrypoint-initdb.d/database_dump.sql
     restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: xxxxxxx
-      MYSQL_DATABASE: xxxxx
-      MYSQL_USER: xxxx
-      MYSQL_PASSWORD: xxxx
-
-  wordpress:
-    image: wordpress:6.1-php7.4-fpm
-    depends_on:
-      - db
-    volumes:
-      - wordpress_data:/var/www/html
-    restart: always
-    environment:
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_USER: xxxx
-      WORDPRESS_DB_PASSWORD: xxxx
-      WORDPRESS_DB_NAME: xxxx
-
-  nginx:
-    image: nginx:1.24
-    volumes:
-      - wordpress_data:/var/www/html
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    ports:
-      - "8000:80"
-    depends_on:
-      - wordpress
-    restart: always  
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
-      - "8080:80"
+      - '8080:80'
     environment:
-      PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: xxxxxxx
-    depends_on:
-      - db
+      - PMA_HOST=mysql
+      - MYSQL_ROOT_PASSWORD=aqwe123
     restart: always
 
 volumes:
-  db_data:
   wordpress_data:
-
+  mysql_data:
+  db_data:
