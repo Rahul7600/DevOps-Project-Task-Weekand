@@ -1,4 +1,4 @@
-Dockerize Wordpress Application Nginx ,MYSQL,PHP-FPM   
+Dockerize Wordpress Application Nginx ,MYSQL,PHP-FPM Ubuntu 24.04   
 
 
 > Create Directory mkdir wordpress-compose
