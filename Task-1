@@ -1,104 +1,52 @@
-Dockerize Wordprees,Php-Fpm,Mysql,Nginx,Phpmyadmin Using Docker Compose on Ubuntu 20.04.
-
-Step-1 Go to root Directory 
-
-2- mkdir -p wordpress-compose
-cd wordpress-compose/
-
-3- touch docker-compose.yml
-mkdir -p nginx/
-mkdir -p db-data/
-mkdir -p logs/nginx/
-mkdir -p wordpress/
-
-4- Create a new file wordpress.conf:
-
-   >  vim nginx/wordpress.conf
-
-5- server {
-    listen 80;
-    server_name ip;
- 
-    root /var/www/html;
-    index index.php;
- 
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log;
- 
-    location / {
-        try_files $uri $uri/ /index.php?$args;
-    }
- 
-    location ~ \.php$ {
-        try_files $uri =404;
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass wordpress:9000;
-        fastcgi_index index.php;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-    }
-}
-
-
-6- vim docker-compose.yml
-
-version: '3.7'
-
 services:
-  nginx:
-    image: nginx:latest
-    ports:
-      - '80:80'
+  db:
+    image: mysql:8.0.39
     volumes:
-      - ./nginx:/etc/nginx/conf.d
-      - ./logs/nginx:/var/log/nginx
-      - ./wordpress:/var/www/html
-    links:
-      - wordpress
+      - db_data:/var/lib/mysql
+      - ./database_dump.sql:/docker-entrypoint-initdb.d/database_dump.sql
     restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: xxxxxxx
+      MYSQL_DATABASE: xxxxx
+      MYSQL_USER: xxxx
+      MYSQL_PASSWORD: xxxx
 
   wordpress:
-    image: wordpress:4.7.1-php7.0-fpm
-    ports:
-      - '9000:9000'
+    image: wordpress:6.1-php7.4-fpm
+    depends_on:
+      - db
     volumes:
-      - ./wordpress:/var/www/html
-    environment:
-      - WORDPRESS_DB_NAME=wpdb
-      - WORDPRESS_TABLE_PREFIX=wp_
-      - WORDPRESS_DB_HOST=mysql
-      - WORDPRESS_DB_PASSWORD=aqwe123
-    links:
-      - mysql
+      - wordpress_data:/var/www/html
     restart: always
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: xxxx
+      WORDPRESS_DB_PASSWORD: xxxx
+      WORDPRESS_DB_NAME: xxxx
 
-  mysql:
-    image: mysql:5.7
-    environment:
-      - MYSQL_ROOT_PASSWORD=aqwe123
-      - MYSQL_DATABASE=wpdb
-    restart: always
+  nginx:
+    image: nginx:1.24
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8000:80"
+    depends_on:
+      - wordpress
+    restart: always  
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
-      - '8080:80'
+      - "8080:80"
     environment:
-      - PMA_HOST=mysql
-      - MYSQL_ROOT_PASSWORD=aqwe123
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: xxxxxxx
+    depends_on:
+      - db
     restart: always
 
-save and exit
-
-7- Run Docker Compose 
-
-> cd ~/wordpress-compose/
-docker-compose up -d
-
-8- Before we do this step, let's check the available ports/open ports on the system. Make sure you have 3 ports opened, port 80, 3306 and port 9000.
-
-9- netstat -plntu -  netstat -plntu is used to display active network connections and listening ports on a Linux system
-
-10- Browse Wordprees using server ip and Domain.
+volumes:
+  db_data:
+  wordpress_data:
 
